@@ -46,8 +46,6 @@ export class RoupasLista {
     }
     getByCor(cor) {
         return this.roupas.filter((roupa) => roupa.cor == cor);
-    }
-    getsizeandtype(tamanho, tipo) {
-        return this.roupas.filter((roupa) => roupa.tamanho == tamanho && roupa.tipo == tipo);
+    
 }
 }

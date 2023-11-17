@@ -9,46 +9,72 @@ export const pegarRoupas = (req, res) => {
     const roupas = list.pegarTodasRoupas();
 
     if (roupas.length) {
-        return res.status(200).send(roupas);
+        return res.status(200).send({message: `voce tem ${roupas.length} roupas cadastradas`, roupas});
     }
-    //filtragens
+    //filtragen
 
-    const { tipo } = req.query;
+    const { tipo, tamanho, cor } = req.query;
+
     if (tipo) {
         const roupas = list.getByTipo(tipo);
         if (roupas.length) {
-            return res.status(200).send(roupas);
+            filtrado.push(roupas)
+        } else {
+             return res.status(200).send({
+                 message: `não há roupas cadastradas do tipo ${tipo}`
+             });
+
         }
-        return res.status(200).send({ message: `Não há roupas cadastradas do tipo ${tipo}` });
     }
-    const { tamanho } = req.query;
     if (tamanho) {
         const roupas = list.getByTamanho(tamanho);
         if (roupas.length) {
-            return res.status(200).send(roupas);
+            filtrado.push(roupas)
         }
-        return res.status(200).send({ message: `Não há roupas cadastradas do tamanho ${tamanho}` });
+        // return res.status(200).send({
+        //     message: `não há roupas cadastradas do tamanho ${tamanho}`
+        // });
     }
-
-    const { cor } = req.query;
     if (cor) {
         const roupas = list.getByCor(cor);
         if (roupas.length) {
-            return res.status(200).send(roupas);
+            filtrado.push(roupas)
         }
-        return res.status(200).send({ message: `Não há roupas cadastradas da cor ${cor}` });
+
+        if(roupas.length === 0) {
+            return res.status(404).send({ message: "roupa não encontrada"})
+        }
+        // return res.status(200).send({
+        //     message: `não há roupas cadastradas do cor ${cor}`
+        // });
     }
 
     if (tamanho && tipo) {
-        const roupas = list.getsizeandtype(tamanho, tipo);
+        const roupas = list.getByTamanho(tamanho);
         if (roupas.length) {
-            return res.status(200).send(roupas);
+            return res.status(200).send({ quantity: roupas.length, data: roupas })
         }
-        return res.status(200).send({ message: `Não há roupas cadastradas do tamanho ${tamanho} e do tipo ${tipo}` });
     }
 
-    return res.status(200).send({ message: "Não há roupas cadastradas" });
-};
+    if (!tipo && !tamanho && !cor) {
+        const roupas = list.pegarTodasRoupas();
+
+        return res.status(200).send({ quantity: roupas.length, data: roupas })
+    }
+
+    return res.status(200).send({ quantity: list.length, data: filtrado})
+
+
+    // if (roupas.length) {
+    //     return res.status(200).send(roupas);
+    // }
+
+    // return res.status(200).send({
+    //     message: "não há roupas cadastradas"
+    // });
+
+
+}
 
 //pegar roupa por id
 export const pegarRoupaPorId = (req, res) => {
@@ -67,6 +93,11 @@ export const adicionarRoupa = (req, res) => {
     let { nome, tipo, tamanho, cor, imagem, quantidade } = req.body;
     tamanho = tamanho.toUpperCase();
     const erros = [];
+
+    const isUrlValida = (url) => {
+        const regex = /(http(s?):)([/|.|\w|\s|-])*\.(?:jpg|gif|png)/g;
+        return regex.test(url);
+    } 
 
     if (!nome || !tipo || !tamanho || !cor || !imagem || !quantidade) {
         return res.status(404).send(
@@ -99,7 +130,7 @@ export const adicionarRoupa = (req, res) => {
         erros.push({ message: "Quantidade da roupa não pode ser maior que 15000!" });
     }
     //imagem do item deve ser uma URL válida png, gif, jpg, jpeg
-    if (imagem != "png" && imagem != "gif" && imagem != "jpg" && imagem != "jpeg") {
+    if(!isUrlValida(imagem)){
         erros.push({ message: "Imagem da roupa não pode ser diferente de png, gif, jpg, jpeg!" });
     }
     if (erros.length) {
@@ -126,6 +157,10 @@ export const atualizarRoupa = (req, res) => {
         return res.status(400).send(
             { message: `Roupa com ID ${id} não encontrada` });
     }
+    const isUrlValida = (url) => {
+        const regex = /(http(s?):)([/|.|\w|\s|-])*\.(?:jpg|gif|png)/g;
+        return regex.test(url);
+    } 
 
     //roupas com nome menor com 6 letras e maior que 40 letras
     if (nome.length > 40) {
@@ -153,14 +188,11 @@ export const atualizarRoupa = (req, res) => {
     if (quantidade > 15000) {
         erros.push({ message: "Quantidade da roupa não pode ser maior que 15000!" });
     }
-    //imagem do item deve ser uma URL válida png, gif, jpg, jpeg
-    if (imagem != "png" || imagem != "gif" || imagem != "jpg" || imagem != "jpeg") {
+      //imagem do item deve ser uma URL válida png, gif, jpg, jpeg
+      if(!isUrlValida(imagem)){
         erros.push({ message: "Imagem da roupa não pode ser diferente de png, gif, jpg, jpeg!" });
     }
-    if (erros.length) {
-        console.log(erros);
-        return res.status(404).send({ message: `corrija! voce tem ${erros.length}`, erros });
-    }
+ 
     const roupa = list.pegarRoupaPorId(id);
 
     if (!roupa) {
